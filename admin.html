@@ -1,0 +1,464 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TechWorld | Admin Dashboard</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background: #f1f5f9;
+      color: #172033;
+    }
+
+    header {
+      background: #111827;
+      color: white;
+      padding: 18px 5%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    header h1 {
+      font-size: 23px;
+    }
+
+    button {
+      border: none;
+      border-radius: 6px;
+      padding: 11px 17px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .primary {
+      background: #2563eb;
+      color: white;
+    }
+
+    .danger {
+      background: #dc2626;
+      color: white;
+    }
+
+    main {
+      max-width: 1150px;
+      margin: 35px auto;
+      padding: 0 18px;
+    }
+
+    .panel {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      margin-bottom: 25px;
+      box-shadow: 0 3px 15px #0000000d;
+    }
+
+    .login-box {
+      max-width: 420px;
+      margin: 70px auto;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+    }
+
+    input {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      margin: 12px 0;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 15px;
+    }
+
+    .login-box button {
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    #message {
+      margin-top: 15px;
+      color: #dc2626;
+      overflow-wrap: anywhere;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 18px;
+      margin-bottom: 25px;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      border-left: 5px solid #2563eb;
+      box-shadow: 0 3px 15px #0000000d;
+    }
+
+    .stat-card p {
+      color: #64748b;
+      margin-bottom: 12px;
+    }
+
+    .stat-card h3 {
+      font-size: 28px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 650px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 14px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    th {
+      background: #f8fafc;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 5px 9px;
+      border-radius: 20px;
+      background: #dcfce7;
+      color: #166534;
+      font-size: 12px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    footer {
+      text-align: center;
+      padding: 25px;
+      color: #64748b;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <h1>TechWorld Admin</h1>
+    <button id="logoutBtn" class="danger hidden" onclick="logout()">
+      Logout
+    </button>
+  </header>
+
+  <main>
+    <section id="loginSection" class="panel login-box">
+      <h2>Admin Login</h2>
+      <p>Sign in to manage your TechWorld demo orders.</p>
+
+      <form id="loginForm">
+        <input
+          id="username"
+          type="text"
+          placeholder="Admin Username"
+          autocomplete="username"
+          required
+        >
+
+        <input
+          id="password"
+          type="password"
+          placeholder="Admin Password"
+          autocomplete="current-password"
+          required
+        >
+
+        <button type="submit" class="primary">Login</button>
+      </form>
+
+      <p id="message" role="alert"></p>
+    </section>
+
+    <section id="dashboardSection" class="hidden">
+      <h2>Dashboard Overview</h2>
+
+      <div class="stats">
+        <div class="stat-card">
+          <p>Total Orders</p>
+          <h3 id="totalOrders">0</h3>
+        </div>
+
+        <div class="stat-card">
+          <p>Demo Revenue</p>
+          <h3 id="totalRevenue">₹0</h3>
+        </div>
+
+        <div class="stat-card">
+          <p>Payment Mode</p>
+          <h3 style="font-size: 21px;">Demo Only</h3>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Recent Orders</h2>
+
+        <button class="primary" onclick="loadOrders()">
+          Refresh Orders
+        </button>
+
+        <p id="orderMessage" style="margin: 15px 0;"></p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Customer</th>
+                <th>Email</th>
+                <th>Amount</th>
+                <th>Payment Method</th>
+                <th>Payment Status</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+
+            <tbody id="ordersTable">
+              <tr>
+                <td colspan="6">Login to load orders.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    TechWorld Admin Dashboard | College Project Demo
+  </footer>
+
+  <script>
+    const API_URL = "http://localhost:5000/api";
+
+    let adminToken = null;
+
+    const loginSection = document.getElementById("loginSection");
+    const dashboardSection = document.getElementById("dashboardSection");
+    const message = document.getElementById("message");
+    const orderMessage = document.getElementById("orderMessage");
+
+    document.getElementById("loginForm").addEventListener(
+      "submit",
+      async function (event) {
+        event.preventDefault();
+
+        message.textContent = "Signing in...";
+
+        const username = document.getElementById("username").value.trim();
+        const password = document.getElementById("password").value;
+
+        try {
+          const response = await fetch(`${API_URL}/admin/login`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ username, password })
+          });
+
+          const data = await response.json();
+
+          if (!response.ok || !data.token) {
+            throw new Error(data.message || "Login failed. Check credentials.");
+          }
+
+          adminToken = data.token;
+
+          loginSection.classList.add("hidden");
+          dashboardSection.classList.remove("hidden");
+          document.getElementById("logoutBtn").classList.remove("hidden");
+
+          document.getElementById("password").value = "";
+          message.textContent = "";
+
+          await loadOrders();
+
+        } catch (error) {
+          message.textContent =
+            error.message.includes("fetch")
+              ? "Backend not connected. Start the server on port 5000."
+              : error.message;
+        }
+      }
+    );
+
+    async function loadOrders() {
+      if (!adminToken) return;
+
+      orderMessage.textContent = "Loading orders...";
+
+      try {
+        const response = await fetch(`${API_URL}/admin/orders`, {
+          headers: {
+            "Authorization": `Bearer ${adminToken}`
+          }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Unable to load orders.");
+        }
+
+        // Supports either { orders: [...] } or a direct array response.
+        const orders = Array.isArray(data) ? data : (data.orders || []);
+
+        document.getElementById("totalOrders").textContent = orders.length;
+
+        
+const PRODUCT_PRICES = {
+  1: 69999, 2: 59999, 3: 69999, 4: 28999,
+  5: 62999, 6: 89999, 7: 62999, 8: 89999,
+  9: 4999, 10: 1999, 11: 1499, 12: 2499,
+  13: 29999, 14: 1999, 15: 2499, 16: 799,
+  17: 8999, 18: 3999, 19: 5999, 20: 999,
+  21: 4499, 22: 2499, 23: 59999, 24: 17999,
+  25: 4999
+};
+
+const revenue = orders.reduce((sum, order) => {
+  const items = Array.isArray(order.items) ? order.items : [];
+
+  const orderTotal = items.reduce((itemSum, item) => {
+    const price = PRODUCT_PRICES[Number(item.productId)];
+    const quantity = Number(item.quantity);
+
+    if (!price || !Number.isInteger(quantity) || quantity < 1) {
+      return itemSum;
+    }
+
+    return itemSum + price * quantity;
+  }, 0);
+
+  return sum + orderTotal;
+}, 0);
+
+document.getElementById("totalRevenue").textContent =
+  "₹" + revenue.toLocaleString("en-IN");
+
+
+        const tbody = document.getElementById("ordersTable");
+        tbody.replaceChildren();
+
+        if (orders.length === 0) {
+          const row = tbody.insertRow();
+          const cell = row.insertCell();
+          cell.colSpan = 6;
+          cell.textContent = "No orders found.";
+        }
+
+        
+orders.forEach(order => {const orderDate = order.created_at
+  ? new Date(order.created_at.replace(" ", "T") + "Z")
+      .toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true
+      })
+  : "—";
+  const row = tbody.insertRow();
+
+  const items = Array.isArray(order.items) ? order.items : [];
+
+  const orderTotal = items.reduce((itemSum, item) => {
+    const price = PRODUCT_PRICES[Number(item.productId)];
+    const quantity = Number(item.quantity);
+
+    if (
+      price === undefined ||
+      !Number.isInteger(quantity) ||
+      quantity < 1
+    ) {
+      return itemSum;
+    }
+
+    return itemSum + price * quantity;
+  }, 0);
+
+  const values = [
+  order.id ?? order.order_id ?? "—",
+  order.customer_name ?? order.customerName ?? "—",
+  order.email ?? "—",
+  "₹" + orderTotal.toLocaleString("en-IN"),
+  order.payment_mode ?? order.paymentMode ?? "Demo",
+  order.payment_status ?? order.paymentStatus ?? "NOT_PROCESSED",
+  orderDate
+];
+  values.forEach(value => {
+    const cell = row.insertCell();
+    cell.textContent = String(value);
+  });
+});
+
+
+        orderMessage.textContent = "Orders loaded successfully.";
+
+      } catch (error) {
+        orderMessage.textContent =
+          error.message.includes("fetch")
+            ? "Backend connection failed. Check that node server.js is running."
+            : error.message;
+      }
+    }
+
+    async function logout() {
+      try {
+        if (adminToken) {
+          await fetch(`${API_URL}/admin/logout`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${adminToken}`
+            }
+          });
+        }
+      } catch (error) {
+        console.error("Logout request failed:", error);
+      }
+
+      adminToken = null;
+      dashboardSection.classList.add("hidden");
+      loginSection.classList.remove("hidden");
+      document.getElementById("logoutBtn").classList.add("hidden");
+      document.getElementById("username").value = "";
+      document.getElementById("password").value = "";
+      message.textContent = "";
+      orderMessage.textContent = "";
+    }
+  </script>
+
+</body>
+</html>
