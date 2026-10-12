@@ -94,7 +94,7 @@ $('#placeDemoOrder').addEventListener('click', async () => {
     return;
   }
 
-  const response = await fetch('http://localhost:5000/api/checkout', {
+ const response = await fetch('https://techworld-electronics-gadgets-9z3a.onrender.com/api/checkout', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
